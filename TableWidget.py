@@ -21,7 +21,7 @@ class TestDialog(QtWidgets.QDialog):
         super(TestDialog, self).__init__(parent)
 
         self.setWindowTitle("Test Dialog")
-        self.setMinimumWidth(600)
+        self.setMinimumWidth(500)
 
         self.create_widgets()
         self.create_layouts()
@@ -32,7 +32,6 @@ class TestDialog(QtWidgets.QDialog):
 
         # 创建table
         self.table_wdg =QtWidgets.QTableWidget()
-        # 设置table属性
         self.table_wdg.setColumnCount(5)
         self.table_wdg.setColumnWidth(0, 22)
         self.table_wdg.setColumnWidth(2, 70)
@@ -72,13 +71,36 @@ class TestDialog(QtWidgets.QDialog):
     def create_connections(self):
         self.button_Refresh.clicked.connect(self.refresh)
         self.button_Close.clicked.connect(self.close)
-        pass
+        self.table_wdg.cellChanged.connect(self.on_cell_changed)
+
+
+    def set_cell_changed_connection_enabled(self, enabled):
+        if enabled:
+            self.table_wdg.cellChanged.connect(self.on_cell_changed)
+        else:
+            self.table_wdg.cellChanged.disconnect(self.on_cell_changed)
+
     # ---------------------重写showevent事件--------------#
     def showEvent(self, e):
         super(TestDialog, self).showEvent(e)
         self.refresh()
 
+    #--------------------重写事件 前界面 按键失效-------------------#
+    def keyPressEvent(self, e):
+        super(TestDialog,self).showEvent(e)
+        e.accept()
+
+    #---------------------------修改元素 槽函数-------------------------------#
+    def on_cell_changed(self,row, column):
+        self.set_cell_changed_connection_enabled(False)
+        print("TODO: on_cell_changed")
+        item = self.table_wdg.item(row, column)
+        if column ==1:
+            self.rename(item)
+        self.set_cell_changed_connection_enabled(True)
+    # ---------------------刷新场景-------------------------------#
     def refresh(self):
+        self.set_cell_changed_connection_enabled(False)
         # 初始化QTableWidget 行数为0
         self.table_wdg.setRowCount(0)
 
@@ -96,19 +118,44 @@ class TestDialog(QtWidgets.QDialog):
 
             # 获得node 的 visibility属性
             visible = cmds.getAttr( "{0}.visibility".format(transform_name) )
+
             # 插入QTableWidget 一行
             self.table_wdg.insertRow(i)
+            # 插入元素到行列的位置
+            self.insert_item(i, 0, "", "visibility", visible, True)
+            self.insert_item(i, 1, transform_name, None, transform_name, False)
+            self.insert_item(i, 2, self.float_to_string( translation[0] ), "tx", translation[0], False)
+            self.insert_item(i, 3, self.float_to_string( translation[1] ), "tx", translation[1], False)
+            self.insert_item(i, 4, self.float_to_string( translation[2] ) , "tx", translation[2], False)
 
-            # 插入名字信息到行列的位置
-            self.insert_item(i, 1, transform_name)
-
-    def insert_item(self, row, column, text):
+        self.set_cell_changed_connection_enabled(True)
+    #----------------------设置元素项------------------------------#
+    def insert_item(self, row, column, text, attr, value, is_boolean):
         item = QtWidgets.QTableWidgetItem(text)
+        self.set_item_attr(item, attr)
+        self.set_item_value(item, value)
+        if is_boolean:
+            item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+            self.set_item_checked(item, value)
+
         self.table_wdg.setItem(row, column, item)
 
+    #-----------------------修改名字-------------------------------#
+    def rename(self, item):
+        old_name = self.get_item_value(item)
+        new_name = self.get_item_text(item)
+        if old_name != new_name:
+            actual_new_name = cmds.rename(old_name, new_name)
+            if actual_new_name != new_name:
+                self.set_item_text(item, actual_new_name)
 
+            self.set_item_value(item, actual_new_name)
+
+    # ---------------------------item设置Text-------------------------#
     def set_item_text(self, item, text):
-        return item.text();
+        item.setText(text)
+    def get_item_text(self, item):
+        return item.text()
 
     def set_item_checked(self, item, checked):
         if checked:
@@ -119,6 +166,20 @@ class TestDialog(QtWidgets.QDialog):
     def is_item_checked(self, item):
         return item.checkState() == QtCore.Qt.Checked
 
+    # ---------------------------item设置Attribute-------------------------#
+    def set_item_attr(self, item, attr):
+        item.setData(self.ATTR_ROLE, attr)
+    def get_item_attr(self, item):
+        return item.data(self.ATTR_ROLE)
+
+    # ----------------------get Set Item Value----------#
+    def set_item_value(self, item, value):
+        item.setData(self.VALUE_ROLE, value)
+    def get_item_value(self, item):
+        return item.data(self.VALUE_ROLE)
+    # -------------------------float 转 string--------------#
+    def float_to_string(self, value):
+        return "{0:.4f}".format(value)
 
 if __name__ == "__main__":
     try:
