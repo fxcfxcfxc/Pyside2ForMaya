@@ -1,7 +1,9 @@
 from PySide2 import QtCore
-from PySide2 import QtWidgets
+from PySide2 import QtWidgets,QtGui
 from shiboken2 import wrapInstance
 
+import maya.OpenMaya as om
+import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
 
@@ -10,12 +12,12 @@ def maya_main_window():
     return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
 
 
-class SpinBoxDialog(QtWidgets.QDialog):
+class ImageDialog(QtWidgets.QDialog):
     def __init__(self, parent=maya_main_window()):
-        super(SpinBoxDialog, self).__init__(parent)
+        super(ImageDialog, self).__init__(parent)
 
-        self.setWindowTitle("Spin Box Dialog")
-        # self.setMinimumWidth(200)
+        self.setWindowTitle("ImageDialog")
+        self.setMinimumSize(300,80)
 
         self.create_widgets()
         self.create_layout()
@@ -23,6 +25,7 @@ class SpinBoxDialog(QtWidgets.QDialog):
 
 
     def create_widgets(self):
+        self.create_title_label()
         self.spin_box = QtWidgets.QSpinBox()
         self.spin_box.setFixedWidth(80)
         self.spin_box.setMinimum(-100)
@@ -37,10 +40,25 @@ class SpinBoxDialog(QtWidgets.QDialog):
         self.double_spin_box.setSuffix(" m")
 
 
+    def create_title_label(self):
+        image_path = "../icon/title.png"
+
+
+        # image = QtGui.QImage(image_path)
+        # image = image.scaled(280,60,QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
+
+        # pixmap = QtGui.QPixmap()
+        # pixmap.convertFromImage(image)
+
+        self.title_label = QtWidgets.QLabel("My Awesome Utility")
+        self.title_label.setPixmap(image_path)
+
+
     def create_layout(self):
-        main_layout = QtWidgets.QFormLayout(self)
-        main_layout.addRow("Spin Box: ", self.spin_box)
-        main_layout.addRow("Double Spin Box: ", self.double_spin_box)
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.addWidget(self.title_label)
+        # main_layout.addRow("Spin Box: ", self.spin_box)
+        # main_layout.addRow("Double Spin Box: ", self.double_spin_box)
 
     def create_connection(self):
         self.spin_box.valueChanged.connect(self.print_value)
@@ -51,5 +69,5 @@ class SpinBoxDialog(QtWidgets.QDialog):
         print("value: {0}".format(value))
 
 if __name__ == "__main__":
-    d = SpinBoxDialog()
+    d = ImageDialog()
     d.show()
