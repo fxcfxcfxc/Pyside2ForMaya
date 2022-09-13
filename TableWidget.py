@@ -90,22 +90,27 @@ class TestDialog(QtWidgets.QDialog):
         super(TestDialog,self).showEvent(e)
         e.accept()
 
-    #---------------------------槽函数：当界面发生改变，更新场景数据-------------------------------#
+    #-----------------------槽函数：当界面发生改变，更新场景数据-------------------------------#
     def on_cell_changed(self,row, column):
         self.set_cell_changed_connection_enabled(False)
-        print("TODO: on_cell_changed")
+
+        # 拿到当前用户正在更改的item
         item = self.table_wdg.item(row, column)
         # 判断用户修改的是否是第一列的项
         if column ==1:
+            # 修改物体的名字
             self.rename(item)
 
         else:
+            # 判断是否是第0项  第0项的值都是bool check，true代表第0项  false代表第其他
             is_boolean = column ==0
+            # 更新场景值
             self.update_attr(self.get_full_attr_name(row, item), item, is_boolean)
+
         self.set_cell_changed_connection_enabled(True)
 
 
-    # ---------------------槽函数：刷新场景-------------------------------#
+    # ---------------------槽函数：初始化和刷新场景-------------------------------#
     def refresh(self):
         self.set_cell_changed_connection_enabled(False)
         # 初始化QTableWidget 行数为0
@@ -117,13 +122,13 @@ class TestDialog(QtWidgets.QDialog):
         # 遍历meshes对象
         for i in range(len(meshes)):
 
-            # 有可能有子节点，返回第一个node父级节点
+            # 拿到node名字
             transform_name = cmds.listRelatives( meshes[i], parent=True )[0]
 
             # 获得node 的 translate属性
             translation = cmds.getAttr("{0}.translate".format(transform_name))[0]
 
-            # 获得node 的 visibility属性
+            # 获得node 的 visibility属性  bool 值 物体是否在场景中隐藏
             visible = cmds.getAttr( "{0}.visibility".format(transform_name) )
 
             # 插入QTableWidget 一行
@@ -133,38 +138,46 @@ class TestDialog(QtWidgets.QDialog):
             self.insert_item(i, 1, transform_name, None, transform_name, False)
             self.insert_item(i, 2, self.float_to_string( translation[0] ), "tx", translation[0], False)
             self.insert_item(i, 3, self.float_to_string( translation[1] ), "ty", translation[1], False)
-            self.insert_item(i, 4, self.float_to_string( translation[2] ) , "tz", translation[2], False)
+            self.insert_item(i, 4, self.float_to_string( translation[2] ), "tz", translation[2], False)
 
         self.set_cell_changed_connection_enabled(True)
 
-
-
-
-    #----------------------添加项------------------------------#
+    #----------------------添加item------------------------------#
     def insert_item(self, row, column, text, attr, value, is_boolean):
+        # 实例化一个item 对象
         item = QtWidgets.QTableWidgetItem(text)
+        # 初始化 item 的data
         self.set_item_attr(item, attr)
         self.set_item_value(item, value)
+        # 如果 是第一列 check
         if is_boolean:
+            # 设置checked样式勾选
             item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
             self.set_item_checked(item, value)
 
+        #  插入item
         self.table_wdg.setItem(row, column, item)
 
     #-----------------------修改名字-------------------------------#
     def rename(self, item):
-
+        # 拿到旧的名字
         old_name = self.get_item_value(item)
+        # 拿到新的名字
         new_name = self.get_item_text(item)
         if old_name != new_name:
+            # 修改场景物体名字
             actual_new_name = cmds.rename(old_name, new_name)
+            # 如果修改后maya物体名字不等于界面的名字
             if actual_new_name != new_name:
+                # 就将界面的text重新设置一下
                 self.set_item_text(item, actual_new_name)
 
+            # 同时更新一下item的 数据
             self.set_item_value(item, actual_new_name)
 
     # ----------------------更新值-------------------------------#
     def update_attr(self, attr_name, item, is_boolean):
+        # 如果当前更改的是第0列
         if is_boolean:
             value = self.is_item_checked(item)
             self.set_item_text(item,"")
@@ -231,6 +244,8 @@ class TestDialog(QtWidgets.QDialog):
     # -------------------------float 转 string--------------#
     def float_to_string(self, value):
         return "{0:.4f}".format(value)
+
+
 
 if __name__ == "__main__":
     try:
