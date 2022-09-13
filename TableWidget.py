@@ -90,15 +90,22 @@ class TestDialog(QtWidgets.QDialog):
         super(TestDialog,self).showEvent(e)
         e.accept()
 
-    #---------------------------修改元素 槽函数-------------------------------#
+    #---------------------------槽函数：当界面发生改变，更新场景数据-------------------------------#
     def on_cell_changed(self,row, column):
         self.set_cell_changed_connection_enabled(False)
         print("TODO: on_cell_changed")
         item = self.table_wdg.item(row, column)
+        # 判断用户修改的是否是第一列的项
         if column ==1:
             self.rename(item)
+
+        else:
+            is_boolean = column ==0
+            self.update_attr(self.get_full_attr_name(row, item), item, is_boolean)
         self.set_cell_changed_connection_enabled(True)
-    # ---------------------刷新场景-------------------------------#
+
+
+    # ---------------------槽函数：刷新场景-------------------------------#
     def refresh(self):
         self.set_cell_changed_connection_enabled(False)
         # 初始化QTableWidget 行数为0
@@ -125,11 +132,15 @@ class TestDialog(QtWidgets.QDialog):
             self.insert_item(i, 0, "", "visibility", visible, True)
             self.insert_item(i, 1, transform_name, None, transform_name, False)
             self.insert_item(i, 2, self.float_to_string( translation[0] ), "tx", translation[0], False)
-            self.insert_item(i, 3, self.float_to_string( translation[1] ), "tx", translation[1], False)
-            self.insert_item(i, 4, self.float_to_string( translation[2] ) , "tx", translation[2], False)
+            self.insert_item(i, 3, self.float_to_string( translation[1] ), "ty", translation[1], False)
+            self.insert_item(i, 4, self.float_to_string( translation[2] ) , "tz", translation[2], False)
 
         self.set_cell_changed_connection_enabled(True)
-    #----------------------设置元素项------------------------------#
+
+
+
+
+    #----------------------添加项------------------------------#
     def insert_item(self, row, column, text, attr, value, is_boolean):
         item = QtWidgets.QTableWidgetItem(text)
         self.set_item_attr(item, attr)
@@ -142,6 +153,7 @@ class TestDialog(QtWidgets.QDialog):
 
     #-----------------------修改名字-------------------------------#
     def rename(self, item):
+
         old_name = self.get_item_value(item)
         new_name = self.get_item_text(item)
         if old_name != new_name:
@@ -151,12 +163,51 @@ class TestDialog(QtWidgets.QDialog):
 
             self.set_item_value(item, actual_new_name)
 
+    # ----------------------更新值-------------------------------#
+    def update_attr(self, attr_name, item, is_boolean):
+        if is_boolean:
+            value = self.is_item_checked(item)
+            self.set_item_text(item,"")
+        else:
+            text = self.get_item_text(item)
+            try:
+                value = float(text)
+            except ValueError:
+                self.revert_original_value(item, is_boolean)
+                return
+
+        try:
+            cmds.setAttr(attr_name, value)
+        except:
+            self.revert_original_value(item, is_boolean)
+            return
+        new_value = cmds.getAttr(attr_name)
+        if is_boolean:
+            self.set_item_text(item, self.float_to_string(new_value))
+        else:
+            self.set_item_text(item, self.float_to_string(new_value))
+        self.set_item_value(item, new_value)
+
+
+    def get_full_attr_name(self, row, item):
+        node_name = self.table_wdg.item(row, 1).data(self.VALUE_ROLE)
+        attr_name = self.get_item_attr(item)
+        return "{0}.{1}".format(node_name, attr_name)
+
+    def revert_original_value(self, item , is_boolean):
+        original_value = self.get_item_value(item)
+        if is_boolean:
+            self.set_item_checked(item, original_value)
+        else:
+            self.set_item_text(item, self.float_to_string(original_value))
+
     # ---------------------------item设置Text-------------------------#
     def set_item_text(self, item, text):
         item.setText(text)
     def get_item_text(self, item):
         return item.text()
 
+    # ---------------------------item设置Check-------------------------#
     def set_item_checked(self, item, checked):
         if checked:
             item.setCheckState(QtCore.Qt.Checked)
