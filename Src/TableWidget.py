@@ -90,6 +90,7 @@ class TestDialog(QtWidgets.QDialog):
         super(TestDialog,self).showEvent(e)
         e.accept()
 
+
     #-----------------------槽函数：当界面发生改变，更新场景数据-------------------------------#
     def on_cell_changed(self,row, column):
         self.set_cell_changed_connection_enabled(False)
