@@ -57,18 +57,8 @@ class ImageDialog(QtWidgets.QDialog):
 
     def create_widgets(self):
         self.create_title_label()
-        self.spin_box = QtWidgets.QSpinBox()
-        self.spin_box.setFixedWidth(80)
-        self.spin_box.setMinimum(-100)
-        self.spin_box.setMaximum(100)
-        self.spin_box.setSingleStep(5)
-        self.spin_box.setPrefix("&")
-        self.spin_box.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.changeColor_button = QtWidgets.QPushButton("sss")
 
-        self.double_spin_box = QtWidgets.QDoubleSpinBox()
-        self.double_spin_box.setFixedWidth(80)
-        self.double_spin_box.setRange(-50.0,50.0)
-        self.double_spin_box.setSuffix(" m")
 
 
     def create_title_label(self):
@@ -80,16 +70,19 @@ class ImageDialog(QtWidgets.QDialog):
     def create_layout(self):
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(self.title_label)
-        # main_layout.addRow("Spin Box: ", self.spin_box)
-        # main_layout.addRow("Double Spin Box: ", self.double_spin_box)
+        main_layout.addWidget(self.changeColor_button)
+
 
     def create_connection(self):
-        self.spin_box.valueChanged.connect(self.print_value)
-        self.double_spin_box.valueChanged.connect(self.print_value)
+
+        self.changeColor_button.clicked.connect(self.change_green)
+
+    def change_green(self):
+        self.title_label.set_background_color(QtCore.Qt.green)
+        #  改变控件时 调用
+        self.update()
 
 
-    def print_value(self,value):
-        print("value: {0}".format(value))
 
 if __name__ == "__main__":
     d = ImageDialog()
