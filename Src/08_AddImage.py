@@ -41,7 +41,7 @@ class ImageDialog(QtWidgets.QDialog):
 
 
     def create_title_label(self):
-        image_path = "../icon/title.png"
+        image_path = "../icon/Snipaste.png"
 
 
         # image = QtGui.QImage(image_path)

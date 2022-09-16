@@ -19,6 +19,7 @@ class LightItem(QtWidgets.QWidget):
         super(LightItem,self).__init__(parent)
 
         self.setFixedHeight(26)
+        self.shape_name = shape_name
         self.create_widgets()
         self.create_layout()
         self.create_connections()
@@ -27,11 +28,14 @@ class LightItem(QtWidgets.QWidget):
     def create_widgets(self):
         self.light_type_btn = QtWidgets.QPushButton()
         self.light_type_btn.setFixedSize(20,20)
-        self.visiblity_cb = QtWidgets.QCheckBox()
+        self.light_type_btn.setFlat(True)
 
+        self.visiblity_cb = QtWidgets.QCheckBox()
         self.transform_name_label = QtWidgets.QLabel("placeholder")
         self.transform_name_label.setFixedWidth(120)
         self.transform_name_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.update_values()
 
     def create_layout(self):
         main_layout = QtWidgets.QHBoxLayout(self)
@@ -45,6 +49,40 @@ class LightItem(QtWidgets.QWidget):
 
     def create_connections(self):
         pass
+
+    def update_values(self):
+        self.light_type_btn.setIcon(self.get_light_type_icon())
+        self.visiblity_cb.setChecked(self.is_visible())
+        self.transform_name_label.setText(self.get_transform_name())
+
+    def get_transform_name(self):
+        return cmds.listRelatives(self.shape_name, parent = True)[0]
+
+    def get_attribute_value(self, name, attribute):
+        return cmds.getAttr("{0}.{1}".format(name, attribute))
+
+    def get_light_type(self):
+        return cmds.objectType(self.shape_name)
+
+    # --------------------------获得当前灯光类型的icon----------------#
+    def get_light_type_icon(self):
+        light_type = self.get_light_type()
+        icon= QtGui.QIcon()
+        if light_type =="ambientLight":
+            icon = QtGui.QIcon(":ambientLight.svg")
+        elif light_type == "directionalLight":
+            icon = QtGui.QIcon(":pointLight.svg")
+        elif light_type == "spotLight":
+            icon = QtGui.QIcon(":spotLight.svg")
+        else:
+            icon = QtGui.QIcon(":Light.png")
+        return icon
+
+    #--------------------------获取灯光当前是否隐藏----------------#
+    def is_visible(self):
+        transform_name = self.get_transform_name()
+        return self.get_attribute_value(transform_name,"visibility")
+
 # ------------------------------------#
 class LightPanel(QtWidgets.QDialog):
     WINDOW_TITLE = "Light Panel"
@@ -118,6 +156,7 @@ class LightPanel(QtWidgets.QDialog):
         self.clear_lights()
         print("TODO: re")
         scene_lights = self.get_lights_in_scene()
+        print("scene_lights")
         for light in scene_lights:
             light_item = LightItem(light)
             self.light_layout.addWidget(light_item)
@@ -127,7 +166,7 @@ class LightPanel(QtWidgets.QDialog):
     def clear_lights(self):
         self.light_items = []
         print("TODO: cl")
-        #如果layout中控件 大于0就删除 直到等于0
+        # 如果layout中控件 大于0就删除 直到等于0
         while self.light_layout.count()>0:
             light_item = self.light_layout.takeAt(0)
             if light_item.widget():

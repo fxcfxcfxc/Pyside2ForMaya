@@ -6,7 +6,7 @@ import maya.OpenMaya as om
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 '''
-如何制作一个maya 本身 颜色控件 嵌入qt 中
+可视化颜色控件  maya选色窗口
 
 '''
 
