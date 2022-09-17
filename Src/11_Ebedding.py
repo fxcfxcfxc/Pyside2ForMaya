@@ -1,3 +1,4 @@
+from functools import partial
 from PySide2 import QtCore
 from PySide2 import QtWidgets,QtGui
 from shiboken2 import wrapInstance
@@ -16,43 +17,71 @@ def maya_main_window():
 
 
 # ---------------------------------------------------------------------#
-class CustomColorButton(QtWidgets.QLabel):
+class CustomColorButton(QtWidgets.QWidget):
 
     # ------------------------------自定义信号------------------#
-    color_changed = QtCore.Signal()
+    color_changed = QtCore.Signal(QtGui.QColor)
 
     def __init__(self, color = QtCore.Qt.white, parent=None):
         super(CustomColorButton, self).__init__(parent)
-        self._color = QtGui.QColor()
+
+        self.setObjectName("CustomColorButton")
+        # self._color = QtGui.QColor()
+        self.create_control()
         self.set_size(50,14)
         self.set_color(color)
 
+
+    def create_control(self):
+        #---
+        window = cmds.window()
+        color_slider_name = cmds.colorSliderGrp()
+        #-----
+        self.color_slider_obj = omui.MQtUtil.findControl(color_slider_name)
+        if self.color_slider_obj:
+            self._color_slider_widget = wrapInstance(int(self.color_slider_obj), QtWidgets.QWidget)
+
+            #-----
+            main_layout = QtWidgets.QVBoxLayout(self)
+            main_layout.setObjectName("main_layout")
+            main_layout.setContentsMargins(0,0,0,0)
+            main_layout.addWidget(self._color_slider_widget)
+
+
+            # self._name = omui.MQtUtil.fullName(int(color_slider_obj))
+            # children = self._color_slider_widget.children()
+            self._slider_widget = self._color_slider_widget.findChild(QtWidgets.QWidget, "slider")
+            if self._slider_widget:
+                self._slider_widget.hide()
+            self._color_widget = self._color_slider_widget.findChild(QtWidgets.QWidget, "port")
+
+            cmds.colorSliderGrp( self.get_full_name(), e =True, changeCommand = partial(self.on_color_changed) )
+
+        #-----
+        cmds.deleteUI(window,window = True)
+
+    def get_full_name(self):
+        return omui.MQtUtil.fullName( int(self.color_slider_obj) )
+
     def set_size(self, width, height):
-        self.setFixedSize(width, height)
+        self._color_slider_widget.setFixedWidth(width)
+        self._color_widget.setFixedHeight(height)
 
     def set_color(self, color):
         color = QtGui.QColor(color)
-
-        if self._color !=color:
-            self._color = color
-            pixmap = QtGui.QPixmap(self.size())
-            pixmap.fill(self._color)
-            self.setPixmap(pixmap)
-
-            self.color_changed.emit()
+        cmds.colorSliderGrp(self.get_full_name(), e =True, rgbValue = ( color.redF(), color.greenF(), color.blueF() ) )
+        self.on_color_changed()
 
     def get_color(self):
-        return self._color
+        color = cmds.colorSliderGrp(self.get_full_name(), q = True, rgbValue = True)
+        color =QtGui.QColor(color[0] * 255, color[1] * 255, color[2] * 255)
 
-    def select_color(self):
-        color = QtWidgets.QColorDialog.getColor(self.get_color(), self, options = QtWidgets.QColorDialog.DontUseNativeDialog)
-        if color.isValid():
-            self.set_color(color)
+        return color
+
+    def on_color_changed(self, *args):
+        self.color_changed.emit(self.get_color())
 
 
-    def mouseReleaseEvent(self, ev):
-        if ev.button() == QtCore.Qt.LeftButton:
-            self.select_color()
 
 
 
@@ -83,7 +112,6 @@ class ColorDialog(QtWidgets.QDialog):
 
     def create_connection(self):
         self.c1.color_changed.connect(self.print)
-        pass
 
 
     def print(self):
